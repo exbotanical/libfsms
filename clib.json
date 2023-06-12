@@ -1,0 +1,17 @@
+{
+  "name": "fsms",
+  "version": "0.0.1",
+  "author": "Matthew Zito",
+  "repo": "exbotanical/fsms",
+  "license": "MIT",
+  "description": "",
+  "keywords": [
+
+  ],
+  "src": [
+    "src/fsms.h"
+  ],
+  "development": {
+    "thlorenz/tap.c": "*"
+  }
+}

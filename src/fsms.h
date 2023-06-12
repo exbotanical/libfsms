@@ -1,0 +1,69 @@
+#pragma once
+
+#include <stdbool.h>
+
+#define GET_CONTEXT(tt, fsm) ((tt*)fsm->context)
+
+typedef bool* PredicateFunction(void* context);
+
+typedef struct transition_t {
+  char* name;
+  char* target;
+  void (*action)(void);
+  PredicateFunction* cond;
+} Transition;
+
+typedef struct state_t {
+  char* name;
+  int num_transitions;
+  Transition* transitions[1];
+} StateDescriptor;
+
+typedef struct state_machine_t {
+  char* name;
+  int num_states;
+  char* state;
+  void* context;
+  StateDescriptor* states[1];
+} StateMachine;
+
+// Creates a function `get_context` that returns the fsm context as the type
+// `tt`
+#define CREATE_CONTEXT_GETTER(tt) \
+  tt* get_context(StateMachine* fsm) { return (tt*)(fsm->context); }
+
+// Creates a getter function like `CREATE_CONTEXT_GETTER` but the function name
+// is `get_context` plus underscore and your context type name e.g.
+// tt = MyContext* mctx = get_context_MyContext(fsm);
+#define CREATE_CONTEXT_GETTER_T(tt) \
+  tt* get_context_##tt(StateMachine* fsm) { return (tt*)(fsm->context); }
+
+#define CREATE_MUTATOR(name, tt, code) \
+  tt* name(StateMachine* fsm) {        \
+    tt* ctx = (tt*)(fsm->context);     \
+    ctx->code                          \
+  }
+
+// creates a conditional function `name` that runs a condition which if true
+// mutates a context type `tt` with the member accessor `code` e.g.
+// CREATE_CONDITIONAL_MUTATOR(mutate_if, MyContext, some_member++) ->
+// MyContext->some_member++ `code` only runs if the result of calling
+// `mutate_if` is true
+
+// e.g. mutate_if(fsm, some_predicate) where `some_predicate` is passed as an
+// argument `fsm->context`
+#define CREATE_CONDITIONAL_MUTATOR(name, tt, code)      \
+  tt* name(StateMachine* fsm, bool (*cond)(tt * ctx)) { \
+    tt* ctx = (tt*)(fsm->context);                      \
+    if (!cond(ctx)) return;                             \
+    ctx->code                                           \
+  }
+
+StateMachine* fsm_create(char* name, void* context);
+void fsm_register_state(StateMachine* fsm, StateDescriptor* s);
+void fsm_register_transition(StateMachine* fsm, char* state_name,
+                             Transition* t);
+Transition* fsm_transition_create(char* name, char* target,
+                                  PredicateFunction* cond, void*(action)(void));
+StateDescriptor* fsm_state_create(StateMachine* fsm, char* name);
+void fsm_transition(StateMachine* fsm, char* event);
