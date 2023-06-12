@@ -1,8 +1,8 @@
-#include "fsms.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "libfsms.h"
 
 StateMachine* fsm_create(char* name, void* context) {
   StateMachine* fsm = malloc(sizeof(*fsm));
@@ -61,7 +61,7 @@ void fsm_transition(StateMachine* fsm, char* event) {
   for (int k = 0; k < s->num_transitions; k++) {
     Transition* t = s->transitions[k];
 
-    if (strcmp(t->name, event) == 0 && t->cond(fsm->context)) {
+    if (strcmp(t->name, event) == 0 && t->cond && t->cond(fsm->context)) {
       t->action();
       fsm->state = t->target;
     }

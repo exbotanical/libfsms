@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "fsms.h"
+#include "libfsms.h"
 
 // off : {
 //   transitions : {
@@ -40,7 +40,6 @@ int main() {
   StateDescriptor* on_s = fsm_state_create(fsm, ON_STATE);
 
   fsm_register_transition(fsm, off_s->name, t1);
-
   fsm_register_transition(fsm, on_s->name, t2);
 
   printf("starting state: %s\n", fsm->state);

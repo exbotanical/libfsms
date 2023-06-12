@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include "fsms.h"
+#include "libfsms.h"
 #include "tap.c/tap.h"
 
 typedef struct context_t {

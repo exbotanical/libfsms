@@ -1,4 +1,9 @@
-#pragma once
+#ifndef LIBFSMS_H
+#define LIBFSMS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdbool.h>
 
@@ -67,3 +72,9 @@ Transition* fsm_transition_create(char* name, char* target,
                                   PredicateFunction* cond, void*(action)(void));
 StateDescriptor* fsm_state_create(StateMachine* fsm, char* name);
 void fsm_transition(StateMachine* fsm, char* event);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* LIBFSMS_H */

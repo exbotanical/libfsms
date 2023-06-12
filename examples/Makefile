@@ -1,11 +1,11 @@
 CC=gcc
-OBJFILES=$(wildcard ./*.c)
+SRC=$(wildcard ./*.c)
 TARGET=example
 
 all: $(TARGET)
 
-$(TARGET): $(OBJFILES)
-	$(CC) -I../src -I../deps $(OBJFILES) -o $(TARGET) -L../ -lfsms
+$(TARGET): $(SRC)
+	$(CC) -I../include -I../src -I../deps $(SRC) -o $(TARGET) -L../ -lfsms
 
 clean:
 	rm $(TARGET)
