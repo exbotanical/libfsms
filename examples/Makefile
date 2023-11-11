@@ -1,11 +1,15 @@
-CC=gcc
-SRC=$(wildcard ./*.c)
-TARGET=example
+CC ?= gcc
+INCLUDES := -I../include -I../src -I../deps
+LIBS := -L../ -lfsms
+TARGET := example
 
-all: $(TARGET)
+scheduler: $(SRC)
+	$(CC) scheduler.c $(INCLUDES) $(LIBS) $(SRC) -o example
 
-$(TARGET): $(SRC)
-	$(CC) -I../include -I../src -I../deps $(SRC) -o $(TARGET) -L../ -lfsms
+switch: $(SRC)
+	$(CC) switch.c $(INCLUDES) $(LIBS) $(SRC) -o example
 
 clean:
-	rm $(TARGET)
+	rm example
+
+.PHONY: scheduler switch clean

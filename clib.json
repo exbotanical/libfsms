@@ -1,17 +1,18 @@
 {
-  "name": "fsms",
+  "name": "libfsms",
   "version": "0.0.1",
   "author": "Matthew Zito",
-  "repo": "exbotanical/fsms",
+  "repo": "exbotanical/libfsms",
   "license": "MIT",
   "description": "",
-  "keywords": [
-
-  ],
+  "keywords": [],
   "src": [
     "src/fsms.h"
   ],
   "development": {
     "thlorenz/tap.c": "*"
+  },
+  "dependencies": {
+    "exbotanical/libutil": "0.0.11"
   }
 }

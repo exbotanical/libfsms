@@ -5,30 +5,32 @@
 #include "libfsms.h"
 
 StateMachine* fsm_create(char* name, void* context) {
-  StateMachine* fsm = malloc(sizeof(*fsm));
+  StateMachine* fsm = malloc(sizeof(StateMachine));
   fsm->name = name;
   fsm->context = context;
+  fsm->states = array_init();
 
   return fsm;
 }
 
 static void register_state(StateMachine* fsm, StateDescriptor* s) {
-  fsm->states[fsm->num_states] = malloc(sizeof(s));
-  fsm->states[fsm->num_states++] = s;
+  array_push(fsm->states, s);
 }
 
 StateDescriptor* get_state(StateMachine* fsm, char* name) {
-  for (int i = 0; i < fsm->num_states; i++) {
-    if (strcmp(fsm->states[i]->name, name) == 0) {
-      return fsm->states[i];
+  foreach (fsm->states, i) {
+    StateDescriptor* s = array_get(fsm->states, i);
+    if (s_equals(s->name, name)) {
+      return s;
     }
   }
   return NULL;
 }
 
 StateDescriptor* fsm_state_create(StateMachine* fsm, char* name) {
-  StateDescriptor* s = malloc(sizeof(*s));
+  StateDescriptor* s = malloc(sizeof(StateDescriptor));
   s->name = name;
+  s->transitions = array_init();
 
   register_state(fsm, s);
 
@@ -38,15 +40,12 @@ StateDescriptor* fsm_state_create(StateMachine* fsm, char* name) {
 void fsm_register_transition(StateMachine* fsm, char* state_name,
                              Transition* t) {
   StateDescriptor* state = get_state(fsm, state_name);
-
-  state->transitions[state->num_transitions] = malloc(sizeof(t));
-  state->transitions[state->num_transitions++] = t;
+  array_push(state->transitions, t);
 }
 
-Transition* fsm_transition_create(char* name, char* target,
-                                  PredicateFunction* cond,
-                                  void*(action)(void)) {
-  Transition* t = malloc(sizeof(*t));
+Transition* fsm_transition_create(char* name, char* target, bool (*cond)(void*),
+                                  void (*action)(void*)) {
+  Transition* t = malloc(sizeof(Transition));
   t->name = name;
   t->target = target;
   t->cond = cond;
@@ -58,11 +57,17 @@ Transition* fsm_transition_create(char* name, char* target,
 void fsm_transition(StateMachine* fsm, char* event) {
   StateDescriptor* s = get_state(fsm, fsm->state);
 
-  for (int k = 0; k < s->num_transitions; k++) {
-    Transition* t = s->transitions[k];
+  foreach (s->transitions, i) {
+    Transition* t = array_get(s->transitions, i);
 
-    if (strcmp(t->name, event) == 0 && t->cond && t->cond(fsm->context)) {
-      t->action();
+    if (s_equals(t->name, event)) {
+      if (t->cond && !(t->cond(fsm->context))) {
+        return;
+      }
+
+      if (t->action) {
+        t->action(fsm->context);
+      }
       fsm->state = t->target;
     }
   }

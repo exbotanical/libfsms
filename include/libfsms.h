@@ -7,29 +7,27 @@ extern "C" {
 
 #include <stdbool.h>
 
-#define GET_CONTEXT(tt, fsm) ((tt*)fsm->context)
+#include "libutil/libutil.h"
 
-typedef bool* PredicateFunction(void* context);
+#define GET_CONTEXT(tt, fsm) ((tt*)fsm->context)
 
 typedef struct transition_t {
   char* name;
   char* target;
-  void (*action)(void);
-  PredicateFunction* cond;
+  void (*action)(void*);
+  bool (*cond)(void*);
 } Transition;
 
 typedef struct state_t {
   char* name;
-  int num_transitions;
-  Transition* transitions[1];
+  array_t* transitions;
 } StateDescriptor;
 
 typedef struct state_machine_t {
   char* name;
-  int num_states;
   char* state;
   void* context;
-  StateDescriptor* states[1];
+  array_t* states;
 } StateMachine;
 
 // Creates a function `get_context` that returns the fsm context as the type
@@ -68,8 +66,8 @@ StateMachine* fsm_create(char* name, void* context);
 void fsm_register_state(StateMachine* fsm, StateDescriptor* s);
 void fsm_register_transition(StateMachine* fsm, char* state_name,
                              Transition* t);
-Transition* fsm_transition_create(char* name, char* target,
-                                  PredicateFunction* cond, void*(action)(void));
+Transition* fsm_transition_create(char* name, char* target, bool (*cond)(void*),
+                                  void (*action)(void*));
 StateDescriptor* fsm_state_create(StateMachine* fsm, char* name);
 void fsm_transition(StateMachine* fsm, char* event);
 
