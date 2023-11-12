@@ -62,12 +62,9 @@ clean:
 	rm -f $(OBJ) $(STATIC_TARGET) $(DYNAMIC_TARGET) $(EXAMPLE_TARGET) $(TEST_TARGET)
 
 test: $(STATIC_TARGET)
-	$(foreach test,$(TESTS),					  																											\
-		$(MAKE) .compile_test file=$(test); 																										\
-		printf "\033[1;32m\nRunning test $(patsubst $(TESTDIR)/%,%,$(test))...\n$(SEPARATOR)\n\033[0m";	\
-		./test;\
- 	)
-	rm $(TEST_TARGET)
+	$(CC) $(wildcard $(TESTDIR)/*.c) $(TEST_DEPS) $(STATIC_TARGET) -I$(LINCDIR) -I$(SRCDIR) -I$(DEPSDIR) $(LIBS) -o $(TEST_TARGET)
+	./$(TEST_TARGET)
+	$(MAKE) clean
 
 .compile_test:
 	$(CC) $(CFLAGS) $(file) $(TEST_DEPS) $(STATIC_TARGET) -I$(SRCDIR) -I$(DEPSDIR) $(LIBS) -o $(TEST_TARGET)

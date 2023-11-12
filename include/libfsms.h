@@ -11,17 +11,17 @@ extern "C" {
 
 #define GET_CONTEXT(tt, fsm) ((tt*)fsm->context)
 
-typedef struct transition_t {
-  char* name;
-  char* target;
-  void (*action)(void*);
-  bool (*cond)(void*);
-} Transition;
-
 typedef struct state_t {
   char* name;
   array_t* transitions;
 } StateDescriptor;
+
+typedef struct transition_t {
+  char* name;
+  StateDescriptor* target;
+  void (*action)(void*);
+  bool (*cond)(void*);
+} Transition;
 
 typedef struct state_machine_t {
   char* name;
@@ -30,15 +30,12 @@ typedef struct state_machine_t {
   array_t* states;
 } StateMachine;
 
-// Creates a function `get_context` that returns the fsm context as the type
-// `tt`
-#define CREATE_CONTEXT_GETTER(tt) \
-  tt* get_context(StateMachine* fsm) { return (tt*)(fsm->context); }
+// Creates a function `get_context` that returns the fsm context as the type.
+// The function name is `get_context` plus underscore and your context type name
+// e.g. tt = MyContext* mctx = get_context_MyContext(fsm);
 
-// Creates a getter function like `CREATE_CONTEXT_GETTER` but the function name
-// is `get_context` plus underscore and your context type name e.g.
-// tt = MyContext* mctx = get_context_MyContext(fsm);
-#define CREATE_CONTEXT_GETTER_T(tt) \
+// TODO: just provide the name like CREATE_MUTATOR
+#define CREATE_CONTEXT_GETTER(tt) \
   tt* get_context_##tt(StateMachine* fsm) { return (tt*)(fsm->context); }
 
 #define CREATE_MUTATOR(name, tt, code) \
@@ -63,12 +60,13 @@ typedef struct state_machine_t {
   }
 
 StateMachine* fsm_create(char* name, void* context);
-void fsm_register_state(StateMachine* fsm, StateDescriptor* s);
-void fsm_register_transition(StateMachine* fsm, char* state_name,
-                             Transition* t);
-Transition* fsm_transition_create(char* name, char* target, bool (*cond)(void*),
-                                  void (*action)(void*));
+
+void fsm_transition_create(StateMachine* fsm, char* name,
+                           StateDescriptor* source, StateDescriptor* target,
+                           bool (*cond)(void*), void (*action)(void*));
+
 StateDescriptor* fsm_state_create(StateMachine* fsm, char* name);
+
 void fsm_transition(StateMachine* fsm, char* event);
 
 #ifdef __cplusplus

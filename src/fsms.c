@@ -4,20 +4,7 @@
 
 #include "libfsms.h"
 
-StateMachine* fsm_create(char* name, void* context) {
-  StateMachine* fsm = malloc(sizeof(StateMachine));
-  fsm->name = name;
-  fsm->context = context;
-  fsm->states = array_init();
-
-  return fsm;
-}
-
-static void register_state(StateMachine* fsm, StateDescriptor* s) {
-  array_push(fsm->states, s);
-}
-
-StateDescriptor* get_state(StateMachine* fsm, char* name) {
+static StateDescriptor* get_state(StateMachine* fsm, char* name) {
   foreach (fsm->states, i) {
     StateDescriptor* s = array_get(fsm->states, i);
     if (s_equals(s->name, name)) {
@@ -25,6 +12,25 @@ StateDescriptor* get_state(StateMachine* fsm, char* name) {
     }
   }
   return NULL;
+}
+
+static void register_state(StateMachine* fsm, StateDescriptor* s) {
+  array_push(fsm->states, s);
+}
+
+static void fsm_register_transition(StateMachine* fsm, char* state_name,
+                                    Transition* t) {
+  StateDescriptor* state = get_state(fsm, state_name);
+  array_push(state->transitions, t);
+}
+
+StateMachine* fsm_create(char* name, void* context) {
+  StateMachine* fsm = malloc(sizeof(StateMachine));
+  fsm->name = name;
+  fsm->context = context;
+  fsm->states = array_init();
+
+  return fsm;
 }
 
 StateDescriptor* fsm_state_create(StateMachine* fsm, char* name) {
@@ -37,21 +43,16 @@ StateDescriptor* fsm_state_create(StateMachine* fsm, char* name) {
   return s;
 }
 
-void fsm_register_transition(StateMachine* fsm, char* state_name,
-                             Transition* t) {
-  StateDescriptor* state = get_state(fsm, state_name);
-  array_push(state->transitions, t);
-}
-
-Transition* fsm_transition_create(char* name, char* target, bool (*cond)(void*),
-                                  void (*action)(void*)) {
+void fsm_transition_create(StateMachine* fsm, char* name,
+                           StateDescriptor* source, StateDescriptor* target,
+                           bool (*cond)(void*), void (*action)(void*)) {
   Transition* t = malloc(sizeof(Transition));
   t->name = name;
   t->target = target;
   t->cond = cond;
   t->action = action;
 
-  return t;
+  fsm_register_transition(fsm, source->name, t);
 }
 
 void fsm_transition(StateMachine* fsm, char* event) {
@@ -68,7 +69,8 @@ void fsm_transition(StateMachine* fsm, char* event) {
       if (t->action) {
         t->action(fsm->context);
       }
-      fsm->state = t->target;
+
+      fsm->state = t->target->name;
     }
   }
 }

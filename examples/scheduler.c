@@ -91,8 +91,10 @@ int main() {
 
   Transition* run_job =
       fsm_transition_create(TRANSITION_NAME, RUNNING_STATE, NULL, on_running);
+
   Transition* await_job = fsm_transition_create(TRANSITION_NAME, EXITED_STATE,
                                                 should_await, on_await);
+
   Transition* report_job = fsm_transition_create(
       TRANSITION_NAME, RESOLVED_STATE, should_resolve, on_resolve);
 
