@@ -1,7 +1,9 @@
 #include "tap.c/tap.h"
 #include "tests.h"
 
-int main() {
+int
+main ()
+{
   plan(61);
 
   run_fsm_tests();

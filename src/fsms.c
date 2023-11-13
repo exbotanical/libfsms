@@ -4,9 +4,11 @@
 
 #include "libfsms.h"
 
-static StateDescriptor* get_state(StateMachine* fsm, char* name) {
+static StateDescriptor *
+get_state (StateMachine *fsm, const char *name)
+{
   foreach (fsm->states, i) {
-    StateDescriptor* s = array_get(fsm->states, i);
+    StateDescriptor *s = array_get(fsm->states, i);
     if (s_equals(s->name, name)) {
       return s;
     }
@@ -14,52 +16,118 @@ static StateDescriptor* get_state(StateMachine* fsm, char* name) {
   return NULL;
 }
 
-static void register_state(StateMachine* fsm, StateDescriptor* s) {
-  array_push(fsm->states, s);
-}
-
-static void fsm_register_transition(StateMachine* fsm, char* state_name,
-                                    Transition* t) {
-  StateDescriptor* state = get_state(fsm, state_name);
-  array_push(state->transitions, t);
-}
-
-StateMachine* fsm_create(char* name, void* context) {
-  StateMachine* fsm = malloc(sizeof(StateMachine));
-  fsm->name = name;
-  fsm->context = context;
-  fsm->states = array_init();
+StateMachine *
+fsm_create (const char *name, void *context)
+{
+  StateMachine *fsm = malloc(sizeof(StateMachine));
+  fsm->name         = name;
+  fsm->context      = context;
+  fsm->states       = array_init();
+  fsm->state        = NULL;
 
   return fsm;
 }
 
-StateDescriptor* fsm_state_create(StateMachine* fsm, char* name) {
-  StateDescriptor* s = malloc(sizeof(StateDescriptor));
-  s->name = name;
-  s->transitions = array_init();
+void
+fsm_free (StateMachine *fsm)
+{
+  fsm->context = NULL;
+  fsm->name    = NULL;
+  fsm->state   = NULL;
+  array_free(fsm->states);
+  fsm->states = NULL;
+  free(fsm);
+  fsm = NULL;
+}
 
-  register_state(fsm, s);
+void
+fsm_set_initial_state (StateMachine *fsm, StateDescriptor *s)
+{
+  fsm->state = s;
+}
+
+const char *
+fsm_get_state_name (StateMachine *fsm)
+{
+  return fsm->state->name;
+}
+
+StateDescriptor *
+fsm_state_create (const char *name)
+{
+  StateDescriptor *s = malloc(sizeof(StateDescriptor));
+  s->name            = name;
+  s->transitions     = array_init();
 
   return s;
 }
 
-void fsm_transition_create(StateMachine* fsm, char* name,
-                           StateDescriptor* source, StateDescriptor* target,
-                           bool (*cond)(void*), void (*action)(void*)) {
-  Transition* t = malloc(sizeof(Transition));
-  t->name = name;
-  t->target = target;
-  t->cond = cond;
-  t->action = action;
-
-  fsm_register_transition(fsm, source->name, t);
+StateDescriptor *
+fsm_state_register (StateMachine *fsm, StateDescriptor *s)
+{
+  array_push(fsm->states, s);
+  return s;
 }
 
-void fsm_transition(StateMachine* fsm, char* event) {
-  StateDescriptor* s = get_state(fsm, fsm->state);
+void
+fsm_state_free (StateDescriptor *s)
+{
+  array_free(s->transitions);
+  s->name        = NULL;
+  s->transitions = NULL;
 
-  foreach (s->transitions, i) {
-    Transition* t = array_get(s->transitions, i);
+  free(s);
+  s = NULL;
+}
+
+Transition *
+fsm_transition_create (
+  const char      *name,
+  StateDescriptor *target,
+  bool (*cond)(void *),
+  void (*action)(void *)
+)
+{
+  Transition *t = malloc(sizeof(Transition));
+  t->name       = name;
+  t->target     = target;
+  t->cond       = cond;
+  t->action     = action;
+
+  return t;
+}
+
+Transition *
+fsm_transition_register (
+  StateMachine    *fsm,
+  StateDescriptor *source,
+  Transition      *t
+)
+{
+  StateDescriptor *state = get_state(fsm, source->name);
+  array_push(state->transitions, t);
+
+  return t;
+}
+
+void
+fsm_transition_free (Transition *t)
+{
+  t->action = NULL;
+  t->cond   = NULL;
+  t->name   = NULL;
+  t->target = NULL;
+  free(t);
+  t = NULL;
+}
+
+void
+fsm_transition (StateMachine *fsm, const char *const event)
+{
+  StateDescriptor *curr_s = fsm->state;
+
+  foreach (curr_s->transitions, i) {
+    Transition *t = array_get(curr_s->transitions, i);
 
     if (s_equals(t->name, event)) {
       if (t->cond && !(t->cond(fsm->context))) {
@@ -70,7 +138,20 @@ void fsm_transition(StateMachine* fsm, char* event) {
         t->action(fsm->context);
       }
 
-      fsm->state = t->target->name;
+      fsm->state = t->target;
     }
   }
+}
+
+StateMachine *
+fsm_clone (const char *name, void *context, StateMachine *source)
+{
+  StateMachine *clone = fsm_create(name, context);
+
+  foreach (source->states, i) {
+    StateDescriptor *source_s = array_get(source->states, i);
+    fsm_state_register(clone, source_s);
+  }
+
+  return clone;
 }

@@ -9,6 +9,9 @@ scheduler: $(SRC)
 switch: $(SRC)
 	$(CC) switch.c $(INCLUDES) $(LIBS) $(SRC) -o example
 
+switch-complex: $(SRC)
+	$(CC) switch-complex.c $(INCLUDES) $(LIBS) $(SRC) -o example
+
 clean:
 	rm example
 

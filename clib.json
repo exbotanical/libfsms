@@ -1,13 +1,14 @@
 {
   "name": "libfsms",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "author": "Matthew Zito",
   "repo": "exbotanical/libfsms",
   "license": "MIT",
-  "description": "",
+  "description": "A tiny state machine library",
   "keywords": [],
   "src": [
-    "src/fsms.h"
+    "src/fsms.c",
+    "include/libfsms.h"
   ],
   "development": {
     "thlorenz/tap.c": "*"

@@ -21,29 +21,52 @@
 // }
 const char* TRANSITION_NAME = "switch";
 
-const char* ON_STATE = "on";
-const char* OFF_STATE = "off";
+const char* ON_STATE        = "on";
+const char* OFF_STATE       = "off";
 
-void on_action_handler() {}
-void off_action_handler() {}
+void
+on_action_handler ()
+{
+}
 
-int main() {
-  StateMachine* fsm = fsm_create("test", NULL);
-  fsm->state = OFF_STATE;
+void
+off_action_handler ()
+{
+}
+
+int
+main ()
+{
+  StateMachine* fsm      = fsm_create("test", NULL);
 
   // TODO: read from file config
-  StateDescriptor* off_s = fsm_state_create(fsm, OFF_STATE);
-  StateDescriptor* on_s = fsm_state_create(fsm, ON_STATE);
+  StateDescriptor* off_s = fsm_state_create(OFF_STATE);
+  StateDescriptor* on_s  = fsm_state_create(ON_STATE);
 
-  fsm_transition_create(fsm, TRANSITION_NAME, off_s, ON_STATE, NULL,
-                        on_action_handler);
+  fsm_state_register(fsm, off_s);
+  fsm_state_register(fsm, on_s);
 
-  fsm_transition_create(fsm, TRANSITION_NAME, on_s, OFF_STATE, NULL,
-                        off_action_handler);
+  fsm_set_initial_state(fsm, off_s);
 
-  printf("starting state: %s\n", fsm->state);
+  Transition* t1
+    = fsm_transition_create(TRANSITION_NAME, on_s, NULL, on_action_handler);
+  fsm_transition_register(fsm, off_s, t1);
+
+  Transition* t2
+    = fsm_transition_create(TRANSITION_NAME, off_s, NULL, off_action_handler);
+  fsm_transition_register(fsm, on_s, t2);
+
+  printf("starting state: %s\n", fsm_get_state_name(fsm));
   fsm_transition(fsm, TRANSITION_NAME);
-  printf("ending state: %s\n", fsm->state);
+  printf("ending state: %s\n", fsm_get_state_name(fsm));
   fsm_transition(fsm, TRANSITION_NAME);
-  printf("ending state: %s\n", fsm->state);
+  printf("ending state: %s\n", fsm_get_state_name(fsm));
+
+  fsm_state_free(on_s);
+  fsm_state_free(off_s);
+  fsm_transition_free(t1);
+  fsm_transition_free(t2);
+  fsm_free(fsm);
+
+  printf("done\n");
 }

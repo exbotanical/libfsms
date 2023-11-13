@@ -9,25 +9,25 @@ extern "C" {
 
 #include "libutil/libutil.h"
 
-#define GET_CONTEXT(tt, fsm) ((tt*)fsm->context)
+#define GET_CONTEXT(tt, fsm) ((tt *)fsm->context)
 
 typedef struct state_t {
-  char* name;
-  array_t* transitions;
+  const char *name;
+  array_t    *transitions;
 } StateDescriptor;
 
 typedef struct transition_t {
-  char* name;
-  StateDescriptor* target;
-  void (*action)(void*);
-  bool (*cond)(void*);
+  const char      *name;
+  StateDescriptor *target;
+  void (*action)(void *context);
+  bool (*cond)(void *context);
 } Transition;
 
 typedef struct state_machine_t {
-  char* name;
-  char* state;
-  void* context;
-  array_t* states;
+  const char      *name;
+  void            *context;
+  array_t         *states;
+  StateDescriptor *state;
 } StateMachine;
 
 // Creates a function `get_context` that returns the fsm context as the type.
@@ -35,12 +35,16 @@ typedef struct state_machine_t {
 // e.g. tt = MyContext* mctx = get_context_MyContext(fsm);
 
 // TODO: just provide the name like CREATE_MUTATOR
-#define CREATE_CONTEXT_GETTER(tt) \
-  tt* get_context_##tt(StateMachine* fsm) { return (tt*)(fsm->context); }
+#define CREATE_CONTEXT_GETTER(tt)         \
+  tt *get_context_##tt(StateMachine *fsm) \
+  {                                       \
+    return (tt *)(fsm->context);          \
+  }
 
 #define CREATE_MUTATOR(name, tt, code) \
-  tt* name(StateMachine* fsm) {        \
-    tt* ctx = (tt*)(fsm->context);     \
+  tt *name(StateMachine *fsm)          \
+  {                                    \
+    tt *ctx = (tt *)(fsm->context);    \
     ctx->code                          \
   }
 
@@ -52,22 +56,46 @@ typedef struct state_machine_t {
 
 // e.g. mutate_if(fsm, some_predicate) where `some_predicate` is passed as an
 // argument `fsm->context`
-#define CREATE_CONDITIONAL_MUTATOR(name, tt, code)      \
-  tt* name(StateMachine* fsm, bool (*cond)(tt * ctx)) { \
-    tt* ctx = (tt*)(fsm->context);                      \
-    if (!cond(ctx)) return;                             \
-    ctx->code                                           \
+#define CREATE_CONDITIONAL_MUTATOR(name, tt, code)     \
+  void name(StateMachine *fsm, bool (*cond)(tt * ctx)) \
+  {                                                    \
+    tt *ctx = (tt *)(fsm->context);                    \
+    if (!cond(ctx)) return;                            \
+    ctx->code                                          \
   }
 
-StateMachine* fsm_create(char* name, void* context);
+StateMachine *fsm_create(const char *name, void *context);
 
-void fsm_transition_create(StateMachine* fsm, char* name,
-                           StateDescriptor* source, StateDescriptor* target,
-                           bool (*cond)(void*), void (*action)(void*));
+void fsm_free(StateMachine *fsm);
 
-StateDescriptor* fsm_state_create(StateMachine* fsm, char* name);
+void fsm_set_initial_state(StateMachine *fsm, StateDescriptor *s);
 
-void fsm_transition(StateMachine* fsm, char* event);
+const char *fsm_get_state_name(StateMachine *fsm);
+
+StateDescriptor *fsm_state_create(const char *name);
+
+StateDescriptor *fsm_state_register(StateMachine *fsm, StateDescriptor *s);
+
+void fsm_state_free(StateDescriptor *s);
+
+Transition *fsm_transition_create(
+  const char      *name,
+  StateDescriptor *target,
+  bool (*cond)(void *),
+  void (*action)(void *)
+);
+
+Transition *fsm_transition_register(
+  StateMachine    *fsm,
+  StateDescriptor *source,
+  Transition      *t
+);
+
+void fsm_transition_free(Transition *t);
+
+void fsm_transition(StateMachine *fsm, const char *const event);
+
+StateMachine *fsm_clone(const char *name, void *context, StateMachine *source);
 
 #ifdef __cplusplus
 }
