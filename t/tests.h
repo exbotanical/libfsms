@@ -6,5 +6,6 @@
 
 void run_fsm_tests(void);
 void run_macro_tests(void);
+void run_inline_tests(void);
 
 #endif /* TESTS_H */

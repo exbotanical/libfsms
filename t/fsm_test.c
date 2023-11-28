@@ -9,45 +9,45 @@ typedef struct context_t {
 
 CREATE_MUTATOR(increment_count, Context, count++;)
 
-const char* TRANSITION_NAME = "switch";
+static const char* TRANSITION_NAME = "switch";
 
-const char* ON_STATE        = "on";
-const char* OFF_STATE       = "off";
+static const char* ON_STATE        = "on";
+static const char* OFF_STATE       = "off";
 
-static int on_counter       = 0;
-static int off_counter      = 0;
+static int on_counter              = 0;
+static int off_counter             = 0;
 
-void
+static void
 on_action_handler ()
 {
   on_counter++;
 }
 
-void
+static void
 off_action_handler ()
 {
   off_counter++;
 }
 
-void
+static void
 noop_handler ()
 {
   return;
 }
 
-bool
+static bool
 cond_true ()
 {
   return true;
 }
 
-bool
+static bool
 cond_false ()
 {
   return false;
 }
 
-bool
+static bool
 cond_context (void* context)
 {
   Context* ctx = (Context*)context;
@@ -71,7 +71,7 @@ fsm_create_test ()
   is(fsm->state, NULL, "initializes state to NULL");
   is(fsm->context, NULL, "initializes context to provided value");
 
-  char* initial_state = fsm_state_create("OFF");
+  char* initial_state = fsm_state_create(OFF_STATE);
   fsm_state_register(fsm, initial_state);
   fsm_set_initial_state(fsm, initial_state);
 
@@ -112,16 +112,23 @@ fsm_state_create_test ()
   fsm_free(fsm);
 }
 
-// void fsm_transition_create_test() {
-//   char* name = "switch";
-//   Transition* t =
-//       fsm_transition_create("switch", ON_STATE, cond_true, noop_handler);
+void
+fsm_transition_create_test ()
+{
+  char* name         = "switch";
 
-//   is(t->name, name, "has the assigned transition name");
-//   is(t->target, ON_STATE, "has the assigned transition target");
-//   cmp_ok(t->action, "==", noop_handler, "assigns the given action callback");
-//   cmp_ok(t->cond, "==", cond_true, "assigns the given cond callback");
-// }
+  StateDescriptor* s = fsm_state_create(ON_STATE);
+
+  Transition* t = fsm_transition_create("switch", s, cond_true, noop_handler);
+
+  is(t->name, name, "has the assigned transition name");
+  is(t->target, s, "has the assigned transition target");
+  cmp_ok(t->action, "==", noop_handler, "assigns the given action callback");
+  cmp_ok(t->guard, "==", cond_true, "assigns the given guard callback");
+
+  fsm_state_free(s);
+  fsm_transition_free(t);
+}
 
 void
 fsm_transition_register_test ()
@@ -161,10 +168,10 @@ fsm_transition_register_test ()
     "maintains the registered transition's action"
   );
   cmp_ok(
-    off_transition->cond,
+    off_transition->guard,
     "==",
     cond_true,
-    "maintains the registered transition's cond"
+    "maintains the registered transition's guard"
   );
 
   Transition* on_transition = array_get(off_s->transitions, 0);
@@ -181,10 +188,10 @@ fsm_transition_register_test ()
     "maintains the registered transition's action"
   );
   cmp_ok(
-    on_transition->cond,
+    on_transition->guard,
     "==",
     cond_true,
-    "maintains the registered transition's cond"
+    "maintains the registered transition's guard"
   );
 
   fsm_state_free(on_s);
@@ -366,6 +373,7 @@ run_fsm_tests (void)
 {
   fsm_create_test();
   fsm_state_create_test();
+  fsm_transition_create_test();
   fsm_transition_register_test();
   fsm_transition_test();
   conditional_transition_test();

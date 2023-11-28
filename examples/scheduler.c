@@ -22,7 +22,7 @@ typedef struct {
 //     promote : {
 //       target: 'EXITED'
 //       action : await_job
-//       cond: ???
+//       guard: ???
 //     }
 //   }
 // }

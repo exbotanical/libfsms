@@ -11,34 +11,38 @@ extern "C" {
 
 #define GET_CONTEXT(tt, fsm) ((tt *)fsm->context)
 
-typedef struct state_t {
+typedef struct {
   const char *name;
   array_t    *transitions;
 } StateDescriptor;
 
-typedef struct transition_t {
+typedef struct {
   const char      *name;
   StateDescriptor *target;
   void (*action)(void *context);
-  bool (*cond)(void *context);
+  bool (*guard)(void *context);
 } Transition;
 
-typedef struct state_machine_t {
+typedef struct {
+  const char *name;
+  const char *target;
+  const char *source;
+  void (*action)(void *context);
+  bool (*guard)(void *context);
+} InlineTransition;
+
+typedef struct {
   const char      *name;
   void            *context;
   array_t         *states;
   StateDescriptor *state;
 } StateMachine;
 
-// Creates a function `get_context` that returns the fsm context as the type.
-// The function name is `get_context` plus underscore and your context type name
-// e.g. tt = MyContext* mctx = get_context_MyContext(fsm);
-
-// TODO: just provide the name like CREATE_MUTATOR
-#define CREATE_CONTEXT_GETTER(tt)         \
-  tt *get_context_##tt(StateMachine *fsm) \
-  {                                       \
-    return (tt *)(fsm->context);          \
+// Creates a function `<name>` that returns the fsm context as the type `<tt>`.
+#define CREATE_CONTEXT_GETTER(name, tt) \
+  tt *name(StateMachine *fsm)           \
+  {                                     \
+    return (tt *)(fsm->context);        \
   }
 
 #define CREATE_MUTATOR(name, tt, code) \
@@ -56,12 +60,12 @@ typedef struct state_machine_t {
 
 // e.g. mutate_if(fsm, some_predicate) where `some_predicate` is passed as an
 // argument `fsm->context`
-#define CREATE_CONDITIONAL_MUTATOR(name, tt, code)     \
-  void name(StateMachine *fsm, bool (*cond)(tt * ctx)) \
-  {                                                    \
-    tt *ctx = (tt *)(fsm->context);                    \
-    if (!cond(ctx)) return;                            \
-    ctx->code                                          \
+#define CREATE_CONDITIONAL_MUTATOR(name, tt, code)      \
+  void name(StateMachine *fsm, bool (*guard)(tt * ctx)) \
+  {                                                     \
+    tt *ctx = (tt *)(fsm->context);                     \
+    if (!guard(ctx)) return;                            \
+    ctx->code                                           \
   }
 
 StateMachine *fsm_create(const char *name, void *context);
@@ -81,7 +85,7 @@ void fsm_state_free(StateDescriptor *s);
 Transition *fsm_transition_create(
   const char      *name,
   StateDescriptor *target,
-  bool (*cond)(void *),
+  bool (*guard)(void *),
   void (*action)(void *)
 );
 
@@ -96,6 +100,25 @@ void fsm_transition_free(Transition *t);
 void fsm_transition(StateMachine *fsm, const char *const event);
 
 StateMachine *fsm_clone(const char *name, void *context, StateMachine *source);
+
+StateMachine *__fsm_inline(
+  const char       *name,
+  const char       *initial_state,
+  char             *states[],
+  int               num_states,
+  InlineTransition *t,
+  ...
+);
+
+// TODO: improve
+#define fsm_inline_states(...) \
+  ((const char *[])__VA_ARGS__), sizeof((char *[])__VA_ARGS__) / sizeof(char *)
+
+#define fsm_inline(name, initial_state, states, num_states, ...) \
+  __fsm_inline(name, initial_state, states, num_states, __VA_ARGS__, NULL)
+
+void __fsm_inline_free(StateMachine *fsm);
+#define fsm_inline_free(fsm) __fsm_inline_free(fsm)
 
 #ifdef __cplusplus
 }

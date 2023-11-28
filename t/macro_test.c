@@ -7,7 +7,7 @@ typedef struct context_t {
   int port;
 } Context;
 
-CREATE_CONTEXT_GETTER(Context)
+CREATE_CONTEXT_GETTER(get_context, Context)
 
 void
 create_context_getter_test ()
@@ -19,16 +19,16 @@ create_context_getter_test ()
   ctx->port         = port;
   StateMachine* fsm = fsm_create("test", (void*)ctx);
 
-  lives_ok({ get_context_Context(fsm)->count; }, "retrieves the context");
-  lives_ok({ get_context_Context(fsm)->port; }, "retrieves the context");
+  lives_ok({ get_context(fsm)->count; }, "retrieves the context");
+  lives_ok({ get_context(fsm)->port; }, "retrieves the context");
   cmp_ok(
-    get_context_Context(fsm)->count,
+    get_context(fsm)->count,
     "==",
     count,
     "retrieves the correct context value"
   );
   cmp_ok(
-    get_context_Context(fsm)->port,
+    get_context(fsm)->port,
     "==",
     port,
     "retrieves the correct context value"
