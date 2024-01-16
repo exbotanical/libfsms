@@ -75,12 +75,39 @@ typedef struct {
     ctx->code                                              \
   }
 
+/**
+ * Create a new state machine
+ *
+ * @param name A name for identifying the state machine
+ * @param context A context object holding metadata, will be passed into
+ * actions and subscribers. May be NULL.
+ * @return state_machine_t*
+ */
 state_machine_t *fsm_create(const char *name, void *context);
 
-void fsm_subscribe(state_machine_t *fsm, void *(*subscriber)(void *));
-
+/**
+ * Free the given state machine
+ *
+ * @param fsm
+ */
 void fsm_free(state_machine_t *fsm);
 
+/**
+ * Subscribe a callback to the given state machine's state transitions.
+ * Does not fire when a transition is cancelled due to a guard condition.
+ * @param fsm
+ * @param subscriber
+ */
+void fsm_subscribe(state_machine_t *fsm, void *(*subscriber)(void *));
+
+/**
+ * Set the state machine's initial state.
+ * TODO: make fsm_create param since this is required...OR set to first
+ * registered state
+ *
+ * @param fsm
+ * @param s
+ */
 void fsm_set_initial_state(state_machine_t *fsm, state_descriptor_t *s);
 
 const char *fsm_get_state_name(state_machine_t *fsm);
@@ -128,8 +155,7 @@ state_machine_t *__fsm_inline(
 #define fsm_inline(name, initial_state, states, num_states, ...) \
   __fsm_inline(name, initial_state, states, num_states, __VA_ARGS__, NULL)
 
-void __fsm_inline_free(state_machine_t *fsm);
-#define fsm_inline_free(fsm) __fsm_inline_free(fsm)
+void fsm_inline_free(state_machine_t *fsm);
 
 #ifdef __cplusplus
 }

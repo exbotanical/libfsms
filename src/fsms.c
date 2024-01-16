@@ -260,7 +260,7 @@ __fsm_inline (
 }
 
 void
-__fsm_inline_free (state_machine_t *fsm)
+fsm_inline_free (state_machine_t *fsm)
 {
   foreach (fsm->states, i) {
     state_descriptor_t *s = array_get(fsm->states, i);
