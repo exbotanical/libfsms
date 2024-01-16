@@ -20,7 +20,7 @@ get_state (StateMachine *fsm, const char *name)
 StateMachine *
 fsm_create (const char *name, void *context)
 {
-  StateMachine *fsm = malloc(sizeof(StateMachine));
+  StateMachine *fsm = xmalloc(sizeof(StateMachine));
   fsm->name         = name;
   fsm->context      = context;
   fsm->subscribers  = array_init();
@@ -65,7 +65,7 @@ fsm_get_state_name (StateMachine *fsm)
 StateDescriptor *
 fsm_state_create (const char *name)
 {
-  StateDescriptor *s = malloc(sizeof(StateDescriptor));
+  StateDescriptor *s = xmalloc(sizeof(StateDescriptor));
   s->name            = name;
   s->transitions     = array_init();
 
@@ -98,7 +98,7 @@ fsm_transition_create (
   void (*action)(void *)
 )
 {
-  Transition *t = malloc(sizeof(Transition));
+  Transition *t = xmalloc(sizeof(Transition));
   t->name       = name;
   t->target     = target;
   t->guard      = guard;
@@ -151,8 +151,7 @@ fsm_transition (StateMachine *fsm, const char *const event)
       TransitionSubscriberArgs *s = NULL;
 
       if (has_elements(fsm->subscribers)) {
-        s       = malloc(sizeof(TransitionSubscriberArgs));
-        // TODO: xmalloc
+        s       = xmalloc(sizeof(TransitionSubscriberArgs));
         s->prev = s_copy(fsm->state->name);
         s->next = s_copy(t->target->name);
         s->ev   = s_copy(event);
@@ -262,4 +261,16 @@ __fsm_inline_free (StateMachine *fsm)
   }
 
   fsm_free(fsm);
+}
+
+void *
+xmalloc (size_t sz)
+{
+  void *ptr;
+  if ((ptr = malloc(sz)) == NULL) {
+    fprintf(stderr, "malloc failed to allocate memory\n");
+    exit(EXIT_FAILURE);
+  }
+
+  return ptr;
 }
