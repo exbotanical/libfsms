@@ -16,6 +16,7 @@ static const char* OFF_STATE       = "off";
 
 static int on_counter              = 0;
 static int off_counter             = 0;
+static int subscriber_count        = 0;
 
 static void
 on_action_handler ()
@@ -52,6 +53,22 @@ cond_context (void* context)
 {
   Context* ctx = (Context*)context;
   return ctx->count == 1;
+}
+
+static void
+subscriber (TransitionSubscriberArgs* args)
+{
+  if (subscriber_count == 0) {
+    is(args->ev, TRANSITION_NAME);
+    is(args->prev, OFF_STATE);
+    is(args->next, ON_STATE);
+  } else if (subscriber_count == 1) {
+    is(args->ev, TRANSITION_NAME);
+    is(args->prev, ON_STATE);
+    is(args->next, OFF_STATE);
+  }
+
+  subscriber_count++;
 }
 
 void
@@ -368,6 +385,38 @@ with_context_test ()
   fsm_free(fsm);
 }
 
+fsm_subscribe_test(void)
+{
+  Context* ctx           = malloc(sizeof(*ctx));
+  ctx->count             = 0;
+  ctx->name              = "test_ctx";
+  StateMachine* fsm      = fsm_create("test", (void*)ctx);
+
+  StateDescriptor* off_s = fsm_state_register(fsm, fsm_state_create(OFF_STATE));
+  StateDescriptor* on_s  = fsm_state_register(fsm, fsm_state_create(ON_STATE));
+
+  fsm_set_initial_state(fsm, off_s);
+
+  Transition* t1 = fsm_transition_register(
+    fsm,
+    off_s,
+    fsm_transition_create(TRANSITION_NAME, on_s, NULL, on_action_handler)
+  );
+
+  Transition* t2 = fsm_transition_register(
+    fsm,
+    on_s,
+    fsm_transition_create(TRANSITION_NAME, off_s, NULL, off_action_handler)
+  );
+
+  fsm_subscribe(fsm, subscriber);
+
+  ok(array_size(fsm->subscribers) == 1);
+
+  fsm_transition(fsm, TRANSITION_NAME);
+  fsm_transition(fsm, TRANSITION_NAME);
+}
+
 void
 run_fsm_tests (void)
 {
@@ -376,6 +425,7 @@ run_fsm_tests (void)
   fsm_transition_create_test();
   fsm_transition_register_test();
   fsm_transition_test();
+  fsm_subscribe_test();
   conditional_transition_test();
   with_context_test();
 }

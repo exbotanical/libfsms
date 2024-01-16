@@ -34,9 +34,16 @@ typedef struct {
 typedef struct {
   const char      *name;
   void            *context;
+  array_t         *subscribers;
   array_t         *states;
   StateDescriptor *state;
 } StateMachine;
+
+typedef struct {
+  const char *prev;
+  const char *next;
+  const char *ev;
+} TransitionSubscriberArgs;
 
 // Creates a function `<name>` that returns the fsm context as the type `<tt>`.
 #define CREATE_CONTEXT_GETTER(name, tt) \
@@ -69,6 +76,8 @@ typedef struct {
   }
 
 StateMachine *fsm_create(const char *name, void *context);
+
+void fsm_subscribe(StateMachine *fsm, void *(*subscriber)(void *));
 
 void fsm_free(StateMachine *fsm);
 

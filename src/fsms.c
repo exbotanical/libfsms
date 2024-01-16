@@ -23,10 +23,17 @@ fsm_create (const char *name, void *context)
   StateMachine *fsm = malloc(sizeof(StateMachine));
   fsm->name         = name;
   fsm->context      = context;
+  fsm->subscribers  = array_init();
   fsm->states       = array_init();
   fsm->state        = NULL;
 
   return fsm;
+}
+
+void
+fsm_subscribe (StateMachine *fsm, void *(*subscriber)(void *))
+{
+  array_push(fsm->subscribers, subscriber);
 }
 
 void
@@ -35,6 +42,8 @@ fsm_free (StateMachine *fsm)
   fsm->context = NULL;
   fsm->name    = NULL;
   fsm->state   = NULL;
+  array_free(fsm->subscribers);
+  fsm->subscribers = NULL;
   array_free(fsm->states);
   fsm->states = NULL;
   free(fsm);
@@ -139,7 +148,22 @@ fsm_transition (StateMachine *fsm, const char *const event)
         t->action(fsm->context);
       }
 
+      TransitionSubscriberArgs *s = NULL;
+
+      if (has_elements(fsm->subscribers)) {
+        s       = malloc(sizeof(TransitionSubscriberArgs));
+        // TODO: xmalloc
+        s->prev = s_copy(fsm->state->name);
+        s->next = s_copy(t->target->name);
+        s->ev   = s_copy(event);
+      }
+
       fsm->state = t->target;
+
+      foreach (fsm->subscribers, i) {
+        void *(*subscriber)(void *) = array_get(fsm->subscribers, i);
+        subscriber(s);
+      }
     }
   }
 }

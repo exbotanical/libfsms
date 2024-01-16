@@ -4,7 +4,7 @@
 int
 main ()
 {
-  plan(78);
+  plan(85);
 
   run_fsm_tests();
   run_macro_tests();
