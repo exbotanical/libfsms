@@ -23,7 +23,7 @@ TEST_DEPS := $(wildcard $(DEPSDIR)/tap.c/*.c)
 DEPS := $(filter-out $(wildcard $(DEPSDIR)/tap.c/*), $(wildcard $(DEPSDIR)/*/*.c))
 OBJ := $(addprefix obj/, $(notdir $(SRC:.c=.o)) $(notdir $(DEPS:.c=.o)))
 
-CFLAGS := -I$(LINCDIR) -I$(DEPSDIR) -Wall -Wextra -pedantic -std=c17
+CFLAGS := -I$(LINCDIR) -I$(DEPSDIR) -Wall -Wextra -pedantic -std=c17 -fPIC
 LIBS := -lm
 
 TESTS := $(wildcard $(TESTDIR)/*.c)

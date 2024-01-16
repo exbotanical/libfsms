@@ -13,22 +13,22 @@ on_transition (void* ctx)
 int
 main (int argc, char const* argv[])
 {
-  StateMachine* fsm = fsm_inline(
+  state_machine_t* fsm = fsm_inline(
     "test",
     "PENDING",
     fsm_inline_states({"PENDING", "READY", "RUNNING", "DONE"}),
-    &(InlineTransition){
+    &(inline_transition_t){
       .name   = TRANSITION_NAME,
       .source = "PENDING",
       .target = "READY",
       .action = on_transition,
     },
-    &(InlineTransition){
+    &(inline_transition_t){
       .name   = TRANSITION_NAME,
       .source = "READY",
       .target = "RUNNING",
       .action = on_transition},
-    &(InlineTransition){
+    &(inline_transition_t){
       .name   = TRANSITION_NAME,
       .source = "RUNNING",
       .target = "DONE",

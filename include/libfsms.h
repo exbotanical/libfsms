@@ -14,14 +14,14 @@ extern "C" {
 typedef struct {
   const char *name;
   array_t    *transitions;
-} StateDescriptor;
+} state_descriptor_t;
 
 typedef struct {
-  const char      *name;
-  StateDescriptor *target;
+  const char         *name;
+  state_descriptor_t *target;
   void (*action)(void *context);
   bool (*guard)(void *context);
-} Transition;
+} transition_t;
 
 typedef struct {
   const char *name;
@@ -29,31 +29,31 @@ typedef struct {
   const char *source;
   void (*action)(void *context);
   bool (*guard)(void *context);
-} InlineTransition;
+} inline_transition_t;
 
 typedef struct {
-  const char      *name;
-  void            *context;
-  array_t         *subscribers;
-  array_t         *states;
-  StateDescriptor *state;
-} StateMachine;
+  const char         *name;
+  void               *context;
+  array_t            *subscribers;
+  array_t            *states;
+  state_descriptor_t *state;
+} state_machine_t;
 
 typedef struct {
   const char *prev;
   const char *next;
   const char *ev;
-} TransitionSubscriberArgs;
+} transition_subscriber_args_t;
 
 // Creates a function `<name>` that returns the fsm context as the type `<tt>`.
 #define CREATE_CONTEXT_GETTER(name, tt) \
-  tt *name(StateMachine *fsm)           \
+  tt *name(state_machine_t *fsm)        \
   {                                     \
     return (tt *)(fsm->context);        \
   }
 
 #define CREATE_MUTATOR(name, tt, code) \
-  tt *name(StateMachine *fsm)          \
+  tt *name(state_machine_t *fsm)       \
   {                                    \
     tt *ctx = (tt *)(fsm->context);    \
     ctx->code                          \
@@ -67,55 +67,57 @@ typedef struct {
 
 // e.g. mutate_if(fsm, some_predicate) where `some_predicate` is passed as an
 // argument `fsm->context`
-#define CREATE_CONDITIONAL_MUTATOR(name, tt, code)      \
-  void name(StateMachine *fsm, bool (*guard)(tt * ctx)) \
-  {                                                     \
-    tt *ctx = (tt *)(fsm->context);                     \
-    if (!guard(ctx)) return;                            \
-    ctx->code                                           \
+#define CREATE_CONDITIONAL_MUTATOR(name, tt, code)         \
+  void name(state_machine_t *fsm, bool (*guard)(tt * ctx)) \
+  {                                                        \
+    tt *ctx = (tt *)(fsm->context);                        \
+    if (!guard(ctx)) return;                               \
+    ctx->code                                              \
   }
 
-StateMachine *fsm_create(const char *name, void *context);
+state_machine_t *fsm_create(const char *name, void *context);
 
-void fsm_subscribe(StateMachine *fsm, void *(*subscriber)(void *));
+void fsm_subscribe(state_machine_t *fsm, void *(*subscriber)(void *));
 
-void fsm_free(StateMachine *fsm);
+void fsm_free(state_machine_t *fsm);
 
-void fsm_set_initial_state(StateMachine *fsm, StateDescriptor *s);
+void fsm_set_initial_state(state_machine_t *fsm, state_descriptor_t *s);
 
-const char *fsm_get_state_name(StateMachine *fsm);
+const char *fsm_get_state_name(state_machine_t *fsm);
 
-StateDescriptor *fsm_state_create(const char *name);
+state_descriptor_t *fsm_state_create(const char *name);
 
-StateDescriptor *fsm_state_register(StateMachine *fsm, StateDescriptor *s);
+state_descriptor_t *
+fsm_state_register(state_machine_t *fsm, state_descriptor_t *s);
 
-void fsm_state_free(StateDescriptor *s);
+void fsm_state_free(state_descriptor_t *s);
 
-Transition *fsm_transition_create(
-  const char      *name,
-  StateDescriptor *target,
+transition_t *fsm_transition_create(
+  const char         *name,
+  state_descriptor_t *target,
   bool (*guard)(void *),
   void (*action)(void *)
 );
 
-Transition *fsm_transition_register(
-  StateMachine    *fsm,
-  StateDescriptor *source,
-  Transition      *t
+transition_t *fsm_transition_register(
+  state_machine_t    *fsm,
+  state_descriptor_t *source,
+  transition_t       *t
 );
 
-void fsm_transition_free(Transition *t);
+void fsm_transition_free(transition_t *t);
 
-void fsm_transition(StateMachine *fsm, const char *const event);
+void fsm_transition(state_machine_t *fsm, const char *const event);
 
-StateMachine *fsm_clone(const char *name, void *context, StateMachine *source);
+state_machine_t *
+fsm_clone(const char *name, void *context, state_machine_t *source);
 
-StateMachine *__fsm_inline(
-  const char       *name,
-  const char       *initial_state,
-  char             *states[],
-  int               num_states,
-  InlineTransition *t,
+state_machine_t *__fsm_inline(
+  const char          *name,
+  const char          *initial_state,
+  char                *states[],
+  int                  num_states,
+  inline_transition_t *t,
   ...
 );
 
@@ -126,7 +128,7 @@ StateMachine *__fsm_inline(
 #define fsm_inline(name, initial_state, states, num_states, ...) \
   __fsm_inline(name, initial_state, states, num_states, __VA_ARGS__, NULL)
 
-void __fsm_inline_free(StateMachine *fsm);
+void __fsm_inline_free(state_machine_t *fsm);
 #define fsm_inline_free(fsm) __fsm_inline_free(fsm)
 
 #ifdef __cplusplus

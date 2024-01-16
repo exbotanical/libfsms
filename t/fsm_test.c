@@ -56,7 +56,7 @@ cond_context (void* context)
 }
 
 static void
-subscriber (TransitionSubscriberArgs* args)
+subscriber (transition_subscriber_args_t* args)
 {
   if (subscriber_count == 0) {
     is(args->ev, TRANSITION_NAME);
@@ -74,9 +74,9 @@ subscriber (TransitionSubscriberArgs* args)
 void
 fsm_create_test ()
 {
-  char* name        = "test";
+  char* name           = "test";
 
-  StateMachine* fsm = fsm_create(name, NULL);
+  state_machine_t* fsm = fsm_create(name, NULL);
 
   is(fsm->name, name, "has the assigned name");
   cmp_ok(
@@ -101,10 +101,10 @@ fsm_create_test ()
 void
 fsm_state_create_test ()
 {
-  char* fsm_name       = "test";
+  char* fsm_name          = "test";
 
-  StateMachine*    fsm = fsm_create(fsm_name, NULL);
-  StateDescriptor* s   = fsm_state_create(OFF_STATE);
+  state_machine_t*    fsm = fsm_create(fsm_name, NULL);
+  state_descriptor_t* s   = fsm_state_create(OFF_STATE);
   fsm_state_register(fsm, s);
 
   is(s->name, OFF_STATE, "has the assigned state name");
@@ -120,7 +120,7 @@ fsm_state_create_test ()
   isnt(fsm->states, NULL, "states array is non-NULL");
 
   is(
-    ((StateDescriptor*)array_get(fsm->states, -1))->name,
+    ((state_descriptor_t*)array_get(fsm->states, -1))->name,
     OFF_STATE,
     "maintains the registered state's attributes"
   );
@@ -132,11 +132,11 @@ fsm_state_create_test ()
 void
 fsm_transition_create_test ()
 {
-  char* name         = "switch";
+  char* name            = "switch";
 
-  StateDescriptor* s = fsm_state_create(ON_STATE);
+  state_descriptor_t* s = fsm_state_create(ON_STATE);
 
-  Transition* t = fsm_transition_create("switch", s, cond_true, noop_handler);
+  transition_t* t = fsm_transition_create("switch", s, cond_true, noop_handler);
 
   is(t->name, name, "has the assigned transition name");
   is(t->target, s, "has the assigned transition target");
@@ -150,28 +150,28 @@ fsm_transition_create_test ()
 void
 fsm_transition_register_test ()
 {
-  char* fsm_name         = "test";
+  char* fsm_name            = "test";
 
-  StateMachine* fsm      = fsm_create(fsm_name, NULL);
+  state_machine_t* fsm      = fsm_create(fsm_name, NULL);
 
-  StateDescriptor* off_s = fsm_state_create(OFF_STATE);
+  state_descriptor_t* off_s = fsm_state_create(OFF_STATE);
   fsm_state_register(fsm, off_s);
-  StateDescriptor* on_s = fsm_state_create(ON_STATE);
+  state_descriptor_t* on_s = fsm_state_create(ON_STATE);
   fsm_state_register(fsm, on_s);
 
-  Transition* t1
+  transition_t* t1
     = fsm_transition_create(TRANSITION_NAME, on_s, cond_true, noop_handler);
   fsm_transition_register(fsm, off_s, t1);
 
   cmp_ok(array_size(off_s->transitions), "==", 1, "off state has 1 transition");
 
-  Transition* t2
+  transition_t* t2
     = fsm_transition_create(TRANSITION_NAME, off_s, cond_true, noop_handler);
   fsm_transition_register(fsm, on_s, t2);
 
   cmp_ok(array_size(on_s->transitions), "==", 1, "on state has 1 transition");
 
-  Transition* off_transition = array_get(on_s->transitions, 0);
+  transition_t* off_transition = array_get(on_s->transitions, 0);
 
   is(
     off_transition->name,
@@ -191,7 +191,7 @@ fsm_transition_register_test ()
     "maintains the registered transition's guard"
   );
 
-  Transition* on_transition = array_get(off_s->transitions, 0);
+  transition_t* on_transition = array_get(off_s->transitions, 0);
 
   is(
     on_transition->name,
@@ -221,20 +221,22 @@ fsm_transition_register_test ()
 void
 fsm_transition_test ()
 {
-  StateMachine* fsm      = fsm_create("test", NULL);
+  state_machine_t* fsm = fsm_create("test", NULL);
 
-  StateDescriptor* off_s = fsm_state_register(fsm, fsm_state_create(OFF_STATE));
-  StateDescriptor* on_s  = fsm_state_register(fsm, fsm_state_create(ON_STATE));
+  state_descriptor_t* off_s
+    = fsm_state_register(fsm, fsm_state_create(OFF_STATE));
+  state_descriptor_t* on_s
+    = fsm_state_register(fsm, fsm_state_create(ON_STATE));
 
   fsm_set_initial_state(fsm, off_s);
 
-  Transition* t1 = fsm_transition_register(
+  transition_t* t1 = fsm_transition_register(
     fsm,
     off_s,
     fsm_transition_create(TRANSITION_NAME, on_s, cond_true, on_action_handler)
   );
 
-  Transition* t2 = fsm_transition_register(
+  transition_t* t2 = fsm_transition_register(
     fsm,
     on_s,
     fsm_transition_create(TRANSITION_NAME, off_s, cond_true, off_action_handler)
@@ -271,23 +273,25 @@ fsm_transition_test ()
 void
 conditional_transition_test ()
 {
-  off_counter            = 0;
-  on_counter             = 0;
+  off_counter          = 0;
+  on_counter           = 0;
 
-  StateMachine* fsm      = fsm_create("test", NULL);
+  state_machine_t* fsm = fsm_create("test", NULL);
 
-  StateDescriptor* off_s = fsm_state_register(fsm, fsm_state_create(OFF_STATE));
-  StateDescriptor* on_s  = fsm_state_register(fsm, fsm_state_create(ON_STATE));
+  state_descriptor_t* off_s
+    = fsm_state_register(fsm, fsm_state_create(OFF_STATE));
+  state_descriptor_t* on_s
+    = fsm_state_register(fsm, fsm_state_create(ON_STATE));
 
   fsm_set_initial_state(fsm, off_s);
 
-  Transition* t1 = fsm_transition_register(
+  transition_t* t1 = fsm_transition_register(
     fsm,
     off_s,
     fsm_transition_create(TRANSITION_NAME, on_s, cond_false, on_action_handler)
   );
 
-  Transition* t2 = fsm_transition_register(
+  transition_t* t2 = fsm_transition_register(
     fsm,
     on_s,
     fsm_transition_create(
@@ -322,20 +326,22 @@ conditional_transition_test ()
 void
 with_context_test ()
 {
-  off_counter            = 0;
-  on_counter             = 0;
+  off_counter          = 0;
+  on_counter           = 0;
 
-  Context* ctx           = malloc(sizeof(*ctx));
-  ctx->count             = 0;
-  ctx->name              = "test_ctx";
-  StateMachine* fsm      = fsm_create("test", (void*)ctx);
+  Context* ctx         = malloc(sizeof(*ctx));
+  ctx->count           = 0;
+  ctx->name            = "test_ctx";
+  state_machine_t* fsm = fsm_create("test", (void*)ctx);
 
-  StateDescriptor* off_s = fsm_state_register(fsm, fsm_state_create(OFF_STATE));
-  StateDescriptor* on_s  = fsm_state_register(fsm, fsm_state_create(ON_STATE));
+  state_descriptor_t* off_s
+    = fsm_state_register(fsm, fsm_state_create(OFF_STATE));
+  state_descriptor_t* on_s
+    = fsm_state_register(fsm, fsm_state_create(ON_STATE));
 
   fsm_set_initial_state(fsm, off_s);
 
-  Transition* t1 = fsm_transition_register(
+  transition_t* t1 = fsm_transition_register(
     fsm,
     off_s,
     fsm_transition_create(
@@ -346,7 +352,7 @@ with_context_test ()
     )
   );
 
-  Transition* t2 = fsm_transition_register(
+  transition_t* t2 = fsm_transition_register(
     fsm,
     on_s,
     fsm_transition_create(
@@ -387,23 +393,25 @@ with_context_test ()
 
 fsm_subscribe_test(void)
 {
-  Context* ctx           = malloc(sizeof(*ctx));
-  ctx->count             = 0;
-  ctx->name              = "test_ctx";
-  StateMachine* fsm      = fsm_create("test", (void*)ctx);
+  Context* ctx         = malloc(sizeof(*ctx));
+  ctx->count           = 0;
+  ctx->name            = "test_ctx";
+  state_machine_t* fsm = fsm_create("test", (void*)ctx);
 
-  StateDescriptor* off_s = fsm_state_register(fsm, fsm_state_create(OFF_STATE));
-  StateDescriptor* on_s  = fsm_state_register(fsm, fsm_state_create(ON_STATE));
+  state_descriptor_t* off_s
+    = fsm_state_register(fsm, fsm_state_create(OFF_STATE));
+  state_descriptor_t* on_s
+    = fsm_state_register(fsm, fsm_state_create(ON_STATE));
 
   fsm_set_initial_state(fsm, off_s);
 
-  Transition* t1 = fsm_transition_register(
+  transition_t* t1 = fsm_transition_register(
     fsm,
     off_s,
     fsm_transition_create(TRANSITION_NAME, on_s, NULL, on_action_handler)
   );
 
-  Transition* t2 = fsm_transition_register(
+  transition_t* t2 = fsm_transition_register(
     fsm,
     on_s,
     fsm_transition_create(TRANSITION_NAME, off_s, NULL, off_action_handler)

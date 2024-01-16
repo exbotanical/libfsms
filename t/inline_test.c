@@ -42,17 +42,17 @@ print (char* a[])
 void
 fsm_inline_test ()
 {
-  StateMachine* fsm = fsm_inline(
+  state_machine_t* fsm = fsm_inline(
     "test",
     OFF_STATE,
     fsm_inline_states({ON_STATE, OFF_STATE}),
-    &(InlineTransition){
+    &(inline_transition_t){
       .name   = TRANSITION_NAME,
       .action = on_action_handler,
       .guard  = cond_true,
       .source = OFF_STATE,
       .target = ON_STATE},
-    &(InlineTransition){
+    &(inline_transition_t){
       .name   = TRANSITION_NAME,
       .action = off_action_handler,
       .guard  = cond_true,

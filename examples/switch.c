@@ -37,22 +37,22 @@ off_action_handler ()
 int
 main ()
 {
-  StateMachine* fsm      = fsm_create("test", NULL);
+  state_machine_t* fsm      = fsm_create("test", NULL);
 
   // TODO: read from file config
-  StateDescriptor* off_s = fsm_state_create(OFF_STATE);
-  StateDescriptor* on_s  = fsm_state_create(ON_STATE);
+  state_descriptor_t* off_s = fsm_state_create(OFF_STATE);
+  state_descriptor_t* on_s  = fsm_state_create(ON_STATE);
 
   fsm_state_register(fsm, off_s);
   fsm_state_register(fsm, on_s);
 
   fsm_set_initial_state(fsm, off_s);
 
-  Transition* t1
+  transition_t* t1
     = fsm_transition_create(TRANSITION_NAME, on_s, NULL, on_action_handler);
   fsm_transition_register(fsm, off_s, t1);
 
-  Transition* t2
+  transition_t* t2
     = fsm_transition_create(TRANSITION_NAME, off_s, NULL, off_action_handler);
   fsm_transition_register(fsm, on_s, t2);
 

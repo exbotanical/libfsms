@@ -5,11 +5,23 @@
 
 #include "libfsms.h"
 
-static StateDescriptor *
-get_state (StateMachine *fsm, const char *name)
+static void *
+xmalloc (size_t sz)
+{
+  void *ptr;
+  if ((ptr = malloc(sz)) == NULL) {
+    fprintf(stderr, "malloc failed to allocate memory\n");
+    exit(EXIT_FAILURE);
+  }
+
+  return ptr;
+}
+
+static state_descriptor_t *
+get_state (state_machine_t *fsm, const char *name)
 {
   foreach (fsm->states, i) {
-    StateDescriptor *s = array_get(fsm->states, i);
+    state_descriptor_t *s = array_get(fsm->states, i);
     if (s_equals(s->name, name)) {
       return s;
     }
@@ -17,27 +29,27 @@ get_state (StateMachine *fsm, const char *name)
   return NULL;
 }
 
-StateMachine *
+state_machine_t *
 fsm_create (const char *name, void *context)
 {
-  StateMachine *fsm = xmalloc(sizeof(StateMachine));
-  fsm->name         = name;
-  fsm->context      = context;
-  fsm->subscribers  = array_init();
-  fsm->states       = array_init();
-  fsm->state        = NULL;
+  state_machine_t *fsm = xmalloc(sizeof(state_machine_t));
+  fsm->name            = name;
+  fsm->context         = context;
+  fsm->subscribers     = array_init();
+  fsm->states          = array_init();
+  fsm->state           = NULL;
 
   return fsm;
 }
 
 void
-fsm_subscribe (StateMachine *fsm, void *(*subscriber)(void *))
+fsm_subscribe (state_machine_t *fsm, void *(*subscriber)(void *))
 {
   array_push(fsm->subscribers, subscriber);
 }
 
 void
-fsm_free (StateMachine *fsm)
+fsm_free (state_machine_t *fsm)
 {
   fsm->context = NULL;
   fsm->name    = NULL;
@@ -51,36 +63,36 @@ fsm_free (StateMachine *fsm)
 }
 
 void
-fsm_set_initial_state (StateMachine *fsm, StateDescriptor *s)
+fsm_set_initial_state (state_machine_t *fsm, state_descriptor_t *s)
 {
   fsm->state = s;
 }
 
 const char *
-fsm_get_state_name (StateMachine *fsm)
+fsm_get_state_name (state_machine_t *fsm)
 {
   return fsm->state->name;
 }
 
-StateDescriptor *
+state_descriptor_t *
 fsm_state_create (const char *name)
 {
-  StateDescriptor *s = xmalloc(sizeof(StateDescriptor));
-  s->name            = name;
-  s->transitions     = array_init();
+  state_descriptor_t *s = xmalloc(sizeof(state_descriptor_t));
+  s->name               = name;
+  s->transitions        = array_init();
 
   return s;
 }
 
-StateDescriptor *
-fsm_state_register (StateMachine *fsm, StateDescriptor *s)
+state_descriptor_t *
+fsm_state_register (state_machine_t *fsm, state_descriptor_t *s)
 {
   array_push(fsm->states, s);
   return s;
 }
 
 void
-fsm_state_free (StateDescriptor *s)
+fsm_state_free (state_descriptor_t *s)
 {
   array_free(s->transitions);
   s->name        = NULL;
@@ -90,38 +102,38 @@ fsm_state_free (StateDescriptor *s)
   s = NULL;
 }
 
-Transition *
+transition_t *
 fsm_transition_create (
-  const char      *name,
-  StateDescriptor *target,
+  const char         *name,
+  state_descriptor_t *target,
   bool (*guard)(void *),
   void (*action)(void *)
 )
 {
-  Transition *t = xmalloc(sizeof(Transition));
-  t->name       = name;
-  t->target     = target;
-  t->guard      = guard;
-  t->action     = action;
+  transition_t *t = xmalloc(sizeof(transition_t));
+  t->name         = name;
+  t->target       = target;
+  t->guard        = guard;
+  t->action       = action;
 
   return t;
 }
 
-Transition *
+transition_t *
 fsm_transition_register (
-  StateMachine    *fsm,
-  StateDescriptor *source,
-  Transition      *t
+  state_machine_t    *fsm,
+  state_descriptor_t *source,
+  transition_t       *t
 )
 {
-  StateDescriptor *state = get_state(fsm, source->name);
+  state_descriptor_t *state = get_state(fsm, source->name);
   array_push(state->transitions, t);
 
   return t;
 }
 
 void
-fsm_transition_free (Transition *t)
+fsm_transition_free (transition_t *t)
 {
   t->action = NULL;
   t->guard  = NULL;
@@ -132,12 +144,12 @@ fsm_transition_free (Transition *t)
 }
 
 void
-fsm_transition (StateMachine *fsm, const char *const event)
+fsm_transition (state_machine_t *fsm, const char *const event)
 {
-  StateDescriptor *curr_s = fsm->state;
+  state_descriptor_t *curr_s = fsm->state;
 
   foreach (curr_s->transitions, i) {
-    Transition *t = array_get(curr_s->transitions, i);
+    transition_t *t = array_get(curr_s->transitions, i);
 
     if (s_equals(t->name, event)) {
       if (t->guard && !(t->guard(fsm->context))) {
@@ -148,10 +160,10 @@ fsm_transition (StateMachine *fsm, const char *const event)
         t->action(fsm->context);
       }
 
-      TransitionSubscriberArgs *s = NULL;
+      transition_subscriber_args_t *s = NULL;
 
       if (has_elements(fsm->subscribers)) {
-        s       = xmalloc(sizeof(TransitionSubscriberArgs));
+        s       = xmalloc(sizeof(transition_subscriber_args_t));
         s->prev = s_copy(fsm->state->name);
         s->next = s_copy(t->target->name);
         s->ev   = s_copy(event);
@@ -167,13 +179,13 @@ fsm_transition (StateMachine *fsm, const char *const event)
   }
 }
 
-StateMachine *
-fsm_clone (const char *name, void *context, StateMachine *source)
+state_machine_t *
+fsm_clone (const char *name, void *context, state_machine_t *source)
 {
-  StateMachine *clone = fsm_create(name, context);
+  state_machine_t *clone = fsm_create(name, context);
 
   foreach (source->states, i) {
-    StateDescriptor *source_s = array_get(source->states, i);
+    state_descriptor_t *source_s = array_get(source->states, i);
     fsm_state_register(clone, source_s);
   }
 
@@ -181,22 +193,22 @@ fsm_clone (const char *name, void *context, StateMachine *source)
 }
 
 static bool
-find_by_name (StateDescriptor *el, char *compare_to)
+find_by_name (state_descriptor_t *el, char *compare_to)
 {
   return s_equals(el->name, compare_to);
 }
 
-StateMachine *
+state_machine_t *
 __fsm_inline (
-  const char       *name,
-  const char       *initial_state,
-  char            **states,
-  int               num_states,
-  InlineTransition *t,
+  const char          *name,
+  const char          *initial_state,
+  char               **states,
+  int                  num_states,
+  inline_transition_t *t,
   ...
 )
 {
-  StateMachine *fsm = fsm_create(name, NULL);
+  state_machine_t *fsm = fsm_create(name, NULL);
 
   for (int i = 0; i < num_states; i++) {
     fsm_state_register(fsm, fsm_state_create(states[i]));
@@ -208,7 +220,7 @@ __fsm_inline (
     return NULL;
   }
 
-  StateDescriptor *initial_sd = array_get(fsm->states, initial_sd_idx);
+  state_descriptor_t *initial_sd = array_get(fsm->states, initial_sd_idx);
   if (!initial_sd) {
     return NULL;
   }
@@ -228,8 +240,8 @@ __fsm_inline (
       return NULL;
     }
 
-    StateDescriptor *source = array_get(fsm->states, source_idx);
-    StateDescriptor *target = array_get(fsm->states, target_idx);
+    state_descriptor_t *source = array_get(fsm->states, source_idx);
+    state_descriptor_t *target = array_get(fsm->states, target_idx);
 
     if (!source || !target) {
       return NULL;
@@ -240,7 +252,7 @@ __fsm_inline (
       source,
       fsm_transition_create(t->name, target, t->guard, t->action)
     );
-  } while ((t = va_arg(args, InlineTransition *)));
+  } while ((t = va_arg(args, inline_transition_t *)));
 
   va_end(args);
 
@@ -248,12 +260,12 @@ __fsm_inline (
 }
 
 void
-__fsm_inline_free (StateMachine *fsm)
+__fsm_inline_free (state_machine_t *fsm)
 {
   foreach (fsm->states, i) {
-    StateDescriptor *s = array_get(fsm->states, i);
+    state_descriptor_t *s = array_get(fsm->states, i);
     foreach (s->transitions, j) {
-      Transition *t = array_get(s->transitions, j);
+      transition_t *t = array_get(s->transitions, j);
 
       fsm_transition_free(t);
     }
@@ -261,16 +273,4 @@ __fsm_inline_free (StateMachine *fsm)
   }
 
   fsm_free(fsm);
-}
-
-void *
-xmalloc (size_t sz)
-{
-  void *ptr;
-  if ((ptr = malloc(sz)) == NULL) {
-    fprintf(stderr, "malloc failed to allocate memory\n");
-    exit(EXIT_FAILURE);
-  }
-
-  return ptr;
 }

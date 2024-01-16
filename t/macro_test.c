@@ -12,12 +12,12 @@ CREATE_CONTEXT_GETTER(get_context, Context)
 void
 create_context_getter_test ()
 {
-  int      count    = 11;
-  int      port     = 3000;
-  Context* ctx      = malloc(sizeof(*ctx));
-  ctx->count        = count;
-  ctx->port         = port;
-  StateMachine* fsm = fsm_create("test", (void*)ctx);
+  int      count       = 11;
+  int      port        = 3000;
+  Context* ctx         = malloc(sizeof(*ctx));
+  ctx->count           = count;
+  ctx->port            = port;
+  state_machine_t* fsm = fsm_create("test", (void*)ctx);
 
   lives_ok({ get_context(fsm)->count; }, "retrieves the context");
   lives_ok({ get_context(fsm)->port; }, "retrieves the context");
@@ -44,12 +44,12 @@ CREATE_MUTATOR(change_port, Context, port *= 2;)
 void
 create_mutator_test ()
 {
-  int      count    = 11;
-  int      port     = 3000;
-  Context* ctx      = malloc(sizeof(*ctx));
-  ctx->count        = count;
-  ctx->port         = port;
-  StateMachine* fsm = fsm_create("test", (void*)ctx);
+  int      count       = 11;
+  int      port        = 3000;
+  Context* ctx         = malloc(sizeof(*ctx));
+  ctx->count           = count;
+  ctx->port            = port;
+  state_machine_t* fsm = fsm_create("test", (void*)ctx);
 
   cmp_ok(
     ctx->count,
@@ -85,10 +85,10 @@ CREATE_CONDITIONAL_MUTATOR(incr_if, Context, count++;)
 void
 create_conditional_mutator_test ()
 {
-  int      count    = 11;
-  Context* ctx      = malloc(sizeof(*ctx));
-  ctx->count        = count;
-  StateMachine* fsm = fsm_create("test", (void*)ctx);
+  int      count       = 11;
+  Context* ctx         = malloc(sizeof(*ctx));
+  ctx->count           = count;
+  state_machine_t* fsm = fsm_create("test", (void*)ctx);
 
   cmp_ok(
     ctx->count,

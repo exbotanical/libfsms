@@ -98,33 +98,33 @@ on_resolve (void *arg)
 int
 main ()
 {
-  job_t *job                 = new_job();
+  job_t *job                    = new_job();
 
-  StateMachine *fsm          = fsm_create("scheduler", job);
+  state_machine_t *fsm          = fsm_create("scheduler", job);
 
-  StateDescriptor *pending_s = fsm_state_create(PENDING_STATE);
+  state_descriptor_t *pending_s = fsm_state_create(PENDING_STATE);
   fsm_state_register(fsm, pending_s);
 
-  StateDescriptor *running_s = fsm_state_create(RUNNING_STATE);
+  state_descriptor_t *running_s = fsm_state_create(RUNNING_STATE);
   fsm_state_register(fsm, running_s);
 
-  StateDescriptor *exited_s = fsm_state_create(EXITED_STATE);
+  state_descriptor_t *exited_s = fsm_state_create(EXITED_STATE);
   fsm_state_register(fsm, exited_s);
 
-  StateDescriptor *resolved_s = fsm_state_create(RESOLVED_STATE);
+  state_descriptor_t *resolved_s = fsm_state_create(RESOLVED_STATE);
   fsm_state_register(fsm, resolved_s);
 
   fsm_set_initial_state(fsm, pending_s);
 
-  Transition *t1
+  transition_t *t1
     = fsm_transition_create(TRANSITION_NAME, running_s, NULL, on_running);
   fsm_transition_register(fsm, pending_s, t1);
 
-  Transition *t2
+  transition_t *t2
     = fsm_transition_create(TRANSITION_NAME, exited_s, should_await, on_await);
   fsm_transition_register(fsm, running_s, t2);
 
-  Transition *t3 = fsm_transition_create(
+  transition_t *t3 = fsm_transition_create(
     TRANSITION_NAME,
     resolved_s,
     should_resolve,

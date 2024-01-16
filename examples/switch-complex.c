@@ -37,25 +37,25 @@ off_action_handler ()
 int
 main ()
 {
-  StateMachine* switch1  = fsm_create("switch1", NULL);
+  state_machine_t* switch1  = fsm_create("switch1", NULL);
 
   // TODO: read from file config
-  StateDescriptor* off_s = fsm_state_create(OFF_STATE);
-  StateDescriptor* on_s  = fsm_state_create(ON_STATE);
+  state_descriptor_t* off_s = fsm_state_create(OFF_STATE);
+  state_descriptor_t* on_s  = fsm_state_create(ON_STATE);
   fsm_state_register(switch1, off_s);
   fsm_state_register(switch1, on_s);
 
   fsm_set_initial_state(switch1, off_s);
 
-  Transition* t1
+  transition_t* t1
     = fsm_transition_create(TRANSITION_NAME, on_s, NULL, on_action_handler);
   fsm_transition_register(switch1, off_s, t1);
 
-  Transition* t2
+  transition_t* t2
     = fsm_transition_create(TRANSITION_NAME, off_s, NULL, off_action_handler);
   fsm_transition_register(switch1, on_s, t2);
 
-  StateMachine* switch2 = fsm_clone("switch2", NULL, switch1);
+  state_machine_t* switch2 = fsm_clone("switch2", NULL, switch1);
   fsm_set_initial_state(switch2, on_s);
 
   printf("[switch1] starting state: %s\n", fsm_get_state_name(switch1));
